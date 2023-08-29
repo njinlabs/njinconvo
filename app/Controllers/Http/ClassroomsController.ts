@@ -30,4 +30,39 @@ export default class ClassroomsController {
       return classroom.serialize()
     })
   }
+
+  public async index({ request, auth }: HttpContextContract) {
+    const page = Number(request.input('page', '1'))
+    const limit = 50
+    const role = auth.use('user').user!.role
+
+    const classroomsQuery = Classroom.query()
+
+    if (role !== 'administrator') {
+      classroomsQuery.whereHas('users', (query) =>
+        query.where('users.id', auth.use('user').user!.id)
+      )
+    }
+
+    const classroomsCount = await classroomsQuery.clone().count('* as count')
+    const classrooms = await classroomsQuery
+      .clone()
+      .preload('users', (query) => query.wherePivot('role', 'teacher'))
+      .withCount('users')
+      .offset((page - 1) * limit)
+      .limit(limit)
+
+    return {
+      page_total: Math.ceil(Number(classroomsCount[0].$extras.count) / limit),
+      data: classrooms.map((classroom) => {
+        const { users, ...classroomData } = classroom.serialize()
+
+        return {
+          ...classroomData,
+          teacher: users[0] || null,
+          participants: Number(classroom.$extras.users_count),
+        }
+      }),
+    }
+  }
 }
