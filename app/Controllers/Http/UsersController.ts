@@ -1,4 +1,6 @@
+import { Attachment } from '@ioc:Adonis/Addons/AttachmentLite'
 import type { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
+import { schema, rules } from '@ioc:Adonis/Core/Validator'
 import User from 'App/Models/User'
 
 export default class UsersController {
@@ -17,5 +19,38 @@ export default class UsersController {
       page_total: Math.ceil(Number(usersCount[0].$extras.count) / limit),
       data: users.map((user) => user.serialize()),
     }
+  }
+
+  public async store({ request }: HttpContextContract) {
+    const { email, password, fullname, gender, role, birthday, avatar } = await request.validate({
+      schema: schema.create({
+        email: schema.string({}, [rules.email()]),
+        password: schema.string.optional(),
+        fullname: schema.string(),
+        gender: schema.enum(['male', 'female']),
+        role: schema.enum(['administrator', 'teacher', 'student']),
+        birthday: schema.date(),
+        avatar: schema.file.optional({
+          extnames: ['jpg', 'jpeg', 'png'],
+          size: '2mb',
+        }),
+      }),
+    })
+
+    const user = new User()
+    user.email = email
+    user.password = password || email
+    user.fullname = fullname
+    user.gender = gender
+    user.role = role
+    user.birthday = birthday
+
+    if (avatar) {
+      user.avatar = Attachment.fromFile(avatar)
+    }
+
+    await user.save()
+
+    return user.serialize()
   }
 }
