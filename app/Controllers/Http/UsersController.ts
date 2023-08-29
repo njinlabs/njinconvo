@@ -95,4 +95,11 @@ export default class UsersController {
 
     return user.serialize()
   }
+
+  public async destroy({ params }: HttpContextContract) {
+    const user = await User.findOrFail(params.id)
+    await user.delete()
+
+    return user.serialize()
+  }
 }
