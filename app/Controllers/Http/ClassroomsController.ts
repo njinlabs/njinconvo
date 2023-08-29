@@ -21,7 +21,11 @@ export default class ClassroomsController {
         }
       )
 
-      await classroom.related('users').attach([auth.use('user').user!.id])
+      await classroom.related('users').attach({
+        [auth.use('user').user!.id]: {
+          role: 'teacher',
+        },
+      })
 
       return classroom.serialize()
     })
