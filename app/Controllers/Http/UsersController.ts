@@ -89,4 +89,10 @@ export default class UsersController {
 
     return user.serialize()
   }
+
+  public async show({ params }: HttpContextContract) {
+    const user = await User.findOrFail(params.id)
+
+    return user.serialize()
+  }
 }
