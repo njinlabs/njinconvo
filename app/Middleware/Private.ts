@@ -4,11 +4,11 @@ export default class Private {
   public async handle(
     { auth, response }: HttpContextContract,
     next: () => Promise<void>,
-    role: string[] = ['administrator']
+    roles: string[] = ['administrator']
   ) {
     const user = auth.use('user').user!
 
-    if (role[0] !== user.role) {
+    if (!roles.includes(user.role)) {
       return response.methodNotAllowed()
     }
 

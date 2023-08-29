@@ -1,7 +1,8 @@
-import { DateTime } from 'luxon'
-import Hash from '@ioc:Adonis/Core/Hash'
-import { column, beforeSave, BaseModel } from '@ioc:Adonis/Lucid/Orm'
 import { AttachmentContract, attachment } from '@ioc:Adonis/Addons/AttachmentLite'
+import Hash from '@ioc:Adonis/Core/Hash'
+import { BaseModel, ManyToMany, beforeSave, column, manyToMany } from '@ioc:Adonis/Lucid/Orm'
+import { DateTime } from 'luxon'
+import Classroom from './Classroom'
 
 export default class User extends BaseModel {
   @column({ isPrimary: true })
@@ -27,6 +28,11 @@ export default class User extends BaseModel {
 
   @column()
   public role: string
+
+  @manyToMany(() => Classroom, {
+    pivotColumns: ['role'],
+  })
+  public classrooms: ManyToMany<typeof Classroom>
 
   @column.dateTime({ autoCreate: true })
   public createdAt: DateTime
