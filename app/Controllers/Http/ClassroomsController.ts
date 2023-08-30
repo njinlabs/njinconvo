@@ -65,4 +65,22 @@ export default class ClassroomsController {
       }),
     }
   }
+
+  public async join({ request, auth }: HttpContextContract) {
+    const { code } = await request.validate({
+      schema: schema.create({
+        code: schema.string(),
+      }),
+    })
+
+    const classroom = await Classroom.findByOrFail('code', code)
+
+    await classroom.related('users').attach({
+      [auth.use('user').user!.id]: {
+        role: 'student',
+      },
+    })
+
+    return classroom.serialize()
+  }
 }
