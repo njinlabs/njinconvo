@@ -87,9 +87,7 @@ export default class ClassroomsController {
   public async show({ auth, params, request }: HttpContextContract) {
     const role = auth.use('user').user!.role
 
-    const classroomsQuery = Classroom.query()
-      .preload('users', (query) => query.wherePivot('role', 'teacher'))
-      .withCount('users')
+    const classroomsQuery = Classroom.query().withCount('users')
 
     if (!params.id) {
       classroomsQuery.where('code', request.input('code', null))
@@ -103,14 +101,28 @@ export default class ClassroomsController {
       )
     }
 
+    if (role !== 'administrator') {
+      classroomsQuery.preload('users', (query) =>
+        query.wherePivot('role', 'teacher').orWhere('users.id', auth.use('user').user!.id)
+      )
+    } else {
+      classroomsQuery.preload('users', (query) => query.wherePivot('role', 'teacher'))
+    }
+
     const classroom = await classroomsQuery.firstOrFail()
 
     const { users, ...classroomData } = classroom.serialize()
 
+    console.log(users)
+
     return {
       ...classroomData,
-      teacher: users[0] || null,
+      teacher: ((users as Array<any>) || []).find((el) => el.classroom_role === 'teacher') || null,
       participants: Number(classroom.$extras.users_count),
+      has_joined:
+        role !== 'administrator'
+          ? ((users as Array<any>) || []).find((el) => el.id === auth.use('user').user!.id) || null
+          : undefined,
     }
   }
 }

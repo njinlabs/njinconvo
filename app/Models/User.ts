@@ -46,4 +46,10 @@ export default class User extends BaseModel {
       user.password = await Hash.make(user.password)
     }
   }
+
+  public serializeExtras() {
+    return {
+      classroom_role: this.$extras.pivot_role || undefined,
+    }
+  }
 }

@@ -38,7 +38,7 @@ export default class UsersController {
     })
 
     const user = new User()
-    user.email = email
+    user.email = email.toLowerCase()
     user.password = password || email
     user.fullname = fullname
     user.gender = gender
@@ -71,7 +71,7 @@ export default class UsersController {
     })
 
     const user = await User.findOrFail(params.id)
-    user.email = email
+    user.email = email.toLowerCase()
     user.fullname = fullname
     user.gender = gender
     user.role = role
