@@ -1,16 +1,21 @@
 import type { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import { schema } from '@ioc:Adonis/Core/Validator'
 import Database from '@ioc:Adonis/Lucid/Database'
+import Classroom from 'App/Models/Classroom'
 import Meeting from 'App/Models/Meeting'
 
 export default class MeetingsController {
   public async index({ auth, params, request }: HttpContextContract) {
-    const classroom = await auth
-      .use('user')
-      .user!.related('classrooms')
-      .query()
-      .where('classrooms.id', params.classroomId)
-      .firstOrFail()
+    const classroomQuery = Classroom.query().where('classrooms.id', params.classroomId)
+    let classroom: Classroom
+
+    if (auth.use('user').user!.role !== 'administrator') {
+      classroomQuery.whereHas('users', (query) =>
+        query.where('users.id', auth.use('user').user!.id)
+      )
+    }
+
+    classroom = await classroomQuery.firstOrFail()
 
     const page = Number(request.input('page', '1'))
     const limit = 20
