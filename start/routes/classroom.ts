@@ -1,10 +1,18 @@
 import Route from '@ioc:Adonis/Core/Route'
 
 Route.group(() => {
-  Route.get('/code', 'ClassroomsController.show').middleware(['auth:user', 'private:student'])
-  Route.post('/join', 'ClassroomsController.join').middleware(['auth:user', 'private:student'])
-  Route.get('/:id/participants', 'ClassroomsController.participants').middleware(['auth:user'])
-  Route.get('/:id', 'ClassroomsController.show').middleware(['auth:user'])
-  Route.post('/', 'ClassroomsController.store').middleware(['auth:user', 'private:teacher'])
-  Route.get('/', 'ClassroomsController.index').middleware(['auth:user'])
-}).prefix('/classroom')
+  Route.get('/code', 'ClassroomsController.show').middleware(['private:student'])
+  Route.post('/join', 'ClassroomsController.join').middleware(['private:student'])
+
+  Route.group(() => {
+    Route.post('/meeting', 'MeetingsController.store').middleware('private:teacher')
+    Route.get('/meeting', 'MeetingsController.index')
+  }).prefix('/:classroomId')
+
+  Route.get('/:id/participants', 'ClassroomsController.participants')
+  Route.get('/:id', 'ClassroomsController.show')
+  Route.post('/', 'ClassroomsController.store').middleware(['private:teacher'])
+  Route.get('/', 'ClassroomsController.index')
+})
+  .prefix('/classroom')
+  .middleware('auth:user')

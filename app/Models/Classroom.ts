@@ -1,6 +1,16 @@
 import { DateTime } from 'luxon'
-import { BaseModel, ManyToMany, beforeCreate, column, manyToMany } from '@ioc:Adonis/Lucid/Orm'
+import {
+  BaseModel,
+  HasMany,
+  ManyToMany,
+  beforeCreate,
+  beforeDelete,
+  column,
+  hasMany,
+  manyToMany,
+} from '@ioc:Adonis/Lucid/Orm'
 import User from './User'
+import Meeting from './Meeting'
 
 export default class Classroom extends BaseModel {
   @column({ isPrimary: true })
@@ -16,6 +26,9 @@ export default class Classroom extends BaseModel {
     pivotColumns: ['role'],
   })
   public users: ManyToMany<typeof User>
+
+  @hasMany(() => Meeting)
+  public meetings: HasMany<typeof Meeting>
 
   @column.dateTime({ autoCreate: true })
   public createdAt: DateTime
@@ -41,5 +54,14 @@ export default class Classroom extends BaseModel {
     }
 
     classroom.code = code
+  }
+
+  @beforeDelete()
+  public static async removeMeeting(classroom: Classroom) {
+    await classroom.load('meetings')
+
+    for (const meeting of classroom.meetings) {
+      await meeting.delete()
+    }
   }
 }
