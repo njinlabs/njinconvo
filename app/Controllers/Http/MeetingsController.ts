@@ -135,4 +135,16 @@ export default class MeetingsController {
 
     return meeting.serialize()
   }
+
+  public async destroy({ auth, params }: HttpContextContract) {
+    const classroom = await this.getClassroom(auth, params.classroomId)
+    const meeting = await classroom
+      .related('meetings')
+      .query()
+      .where('meetings.id', params.id)
+      .firstOrFail()
+    await meeting.delete()
+
+    return meeting.serialize()
+  }
 }

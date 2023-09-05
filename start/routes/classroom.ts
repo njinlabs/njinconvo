@@ -5,6 +5,7 @@ Route.group(() => {
   Route.post('/join', 'ClassroomsController.join').middleware(['private:student'])
 
   Route.group(() => {
+    Route.delete('/:id', 'MeetingsController.destroy').middleware('private:teacher')
     Route.put('/:id', 'MeetingsController.update').middleware('private:teacher')
     Route.get('/:id', 'MeetingsController.show')
     Route.post('/', 'MeetingsController.store').middleware('private:teacher')
