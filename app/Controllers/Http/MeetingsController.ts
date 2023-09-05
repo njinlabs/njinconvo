@@ -1,21 +1,37 @@
+import { AuthContract } from '@ioc:Adonis/Addons/Auth'
 import type { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import { schema } from '@ioc:Adonis/Core/Validator'
 import Database from '@ioc:Adonis/Lucid/Database'
+import {
+  ManyToManyQueryBuilderContract,
+  ModelObject,
+  ModelQueryBuilderContract,
+} from '@ioc:Adonis/Lucid/Orm'
 import Classroom from 'App/Models/Classroom'
 import Meeting from 'App/Models/Meeting'
 
 export default class MeetingsController {
-  public async index({ auth, params, request }: HttpContextContract) {
-    const classroomQuery = Classroom.query().where('classrooms.id', params.classroomId)
-    let classroom: Classroom
+  private async getClassroom(auth: AuthContract, id: string | number): Promise<Classroom> {
+    let classroomQuery:
+      | ManyToManyQueryBuilderContract<typeof Classroom, Classroom | ModelObject>
+      | ModelQueryBuilderContract<typeof Classroom, Classroom> = Classroom.query().where(
+      'classrooms.id',
+      id
+    )
 
     if (auth.use('user').user!.role !== 'administrator') {
-      classroomQuery.whereHas('users', (query) =>
-        query.where('users.id', auth.use('user').user!.id)
-      )
+      classroomQuery = auth
+        .use('user')
+        .user!.related('classrooms')
+        .query()
+        .where('classrooms.id', id)
     }
 
-    classroom = await classroomQuery.firstOrFail()
+    return (await classroomQuery.firstOrFail()) as Classroom
+  }
+
+  public async index({ auth, params, request }: HttpContextContract) {
+    const classroom = await this.getClassroom(auth, params.classroomId)
 
     const page = Number(request.input('page', '1'))
     const limit = 20
@@ -70,5 +86,23 @@ export default class MeetingsController {
 
       return meeting.serialize()
     })
+  }
+
+  public async show({ auth, params }: HttpContextContract) {
+    const classroom = await this.getClassroom(auth, params.classroomId)
+
+    const meetingQuery = classroom.related('meetings').query().where('meetings.id', params.id)
+
+    if (classroom.$extras.pivot_role === 'student') {
+      meetingQuery.where('meetings.is_draft', false)
+    }
+
+    return {
+      ...(await meetingQuery.firstOrFail()).serialize(),
+      classroom: {
+        ...classroom.serialize(),
+        classroom_role: classroom.$extras.pivot_role,
+      },
+    }
   }
 }
