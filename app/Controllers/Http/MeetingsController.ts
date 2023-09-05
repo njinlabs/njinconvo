@@ -2,18 +2,18 @@ import { AuthContract } from '@ioc:Adonis/Addons/Auth'
 import type { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import { schema } from '@ioc:Adonis/Core/Validator'
 import Database from '@ioc:Adonis/Lucid/Database'
-import {
-  ManyToManyQueryBuilderContract,
-  ModelObject,
-  ModelQueryBuilderContract,
-} from '@ioc:Adonis/Lucid/Orm'
+import { ManyToManyQueryBuilderContract, ModelQueryBuilderContract } from '@ioc:Adonis/Lucid/Orm'
 import Classroom from 'App/Models/Classroom'
 import Meeting from 'App/Models/Meeting'
 
 export default class MeetingsController {
-  private async getClassroom(auth: AuthContract, id: string | number): Promise<Classroom> {
+  private async getClassroom(
+    auth: AuthContract,
+    id: string | number,
+    teacherOnly = false
+  ): Promise<Classroom> {
     let classroomQuery:
-      | ManyToManyQueryBuilderContract<typeof Classroom, Classroom | ModelObject>
+      | ManyToManyQueryBuilderContract<typeof Classroom, Classroom>
       | ModelQueryBuilderContract<typeof Classroom, Classroom> = Classroom.query().where(
       'classrooms.id',
       id
@@ -25,6 +25,13 @@ export default class MeetingsController {
         .user!.related('classrooms')
         .query()
         .where('classrooms.id', id)
+
+      if (teacherOnly) {
+        ;(classroomQuery as ManyToManyQueryBuilderContract<typeof Classroom, Classroom>).wherePivot(
+          'classroom_user.role',
+          'teacher'
+        )
+      }
     }
 
     return (await classroomQuery.firstOrFail()) as Classroom
@@ -55,13 +62,7 @@ export default class MeetingsController {
   }
 
   public async store({ auth, params, request }: HttpContextContract) {
-    const classroom = await auth
-      .use('user')
-      .user!.related('classrooms')
-      .query()
-      .where('classrooms.id', params.classroomId)
-      .wherePivot('classroom_user.role', 'teacher')
-      .firstOrFail()
+    const classroom = await this.getClassroom(auth, params.classroomId, true)
 
     const {
       title,
@@ -104,5 +105,34 @@ export default class MeetingsController {
         classroom_role: classroom.$extras.pivot_role,
       },
     }
+  }
+
+  public async update({ auth, params, request }: HttpContextContract) {
+    const classroom = await this.getClassroom(auth, params.classroomId, true)
+    const meeting = await classroom
+      .related('meetings')
+      .query()
+      .where('meetings.id', params.id)
+      .firstOrFail()
+
+    const {
+      title,
+      description,
+      is_draft: isDraft,
+    } = await request.validate({
+      schema: schema.create({
+        title: schema.string(),
+        description: schema.string(),
+        is_draft: schema.boolean(),
+      }),
+    })
+
+    meeting.title = title
+    meeting.description = description
+    meeting.isDraft = isDraft
+
+    await meeting.save()
+
+    return meeting.serialize()
   }
 }
