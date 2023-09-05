@@ -113,8 +113,6 @@ export default class ClassroomsController {
 
     const { users, ...classroomData } = classroom.serialize()
 
-    console.log(users)
-
     return {
       ...classroomData,
       teacher: ((users as Array<any>) || []).find((el) => el.classroom_role === 'teacher') || null,
@@ -124,5 +122,22 @@ export default class ClassroomsController {
           ? ((users as Array<any>) || []).find((el) => el.id === auth.use('user').user!.id) || null
           : undefined,
     }
+  }
+
+  public async participants({ params, auth }: HttpContextContract) {
+    const role = auth.use('user').user!.role
+    const classroomQuery = Classroom.query().where('id', params.id)
+
+    if (role !== 'administrator') {
+      classroomQuery.whereHas('users', (query) =>
+        query.where('users.id', auth.use('user').user!.id)
+      )
+    }
+
+    const classroom = await classroomQuery.firstOrFail()
+
+    const participants = await classroom.related('users').query()
+
+    return participants.map((user) => user.serialize())
   }
 }
