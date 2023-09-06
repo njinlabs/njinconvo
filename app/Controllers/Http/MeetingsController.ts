@@ -1,3 +1,4 @@
+import { Attachment } from '@ioc:Adonis/Addons/AttachmentLite'
 import { AuthContract } from '@ioc:Adonis/Addons/Auth'
 import type { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import { rules, schema } from '@ioc:Adonis/Core/Validator'
@@ -5,6 +6,7 @@ import Database from '@ioc:Adonis/Lucid/Database'
 import { ManyToManyQueryBuilderContract, ModelQueryBuilderContract } from '@ioc:Adonis/Lucid/Orm'
 import Classroom from 'App/Models/Classroom'
 import Meeting from 'App/Models/Meeting'
+import MeetingFile from 'App/Models/MeetingFile'
 import MeetingLink from 'App/Models/MeetingLink'
 
 export default class MeetingsController {
@@ -70,6 +72,7 @@ export default class MeetingsController {
       description,
       is_draft: isDraft,
       links,
+      files,
     } = await request.validate({
       schema: schema.create({
         title: schema.string(),
@@ -79,6 +82,11 @@ export default class MeetingsController {
           schema.object().members({
             title: schema.string(),
             url: schema.string({}, [rules.url()]),
+          })
+        ),
+        files: schema.array.optional().members(
+          schema.file({
+            size: '5mb',
           })
         ),
       }),
@@ -106,9 +114,26 @@ export default class MeetingsController {
         )
       }
 
+      let meetingFiles: MeetingFile[] = []
+      if (files?.length) {
+        meetingFiles = await MeetingFile.createMany(
+          files.map((file) => ({
+            file: Attachment.fromFile(file),
+            meetingId: meeting.id,
+          })),
+          {
+            client: trx,
+          }
+        )
+      }
+
       await meeting.related('classroom').associate(classroom)
 
-      return { ...meeting.serialize(), links: meetingLinks.map((link) => link.serialize()) }
+      return {
+        ...meeting.serialize(),
+        links: meetingLinks.map((link) => link.serialize()),
+        files: meetingFiles.map((link) => link.serialize()),
+      }
     })
   }
 

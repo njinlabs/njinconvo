@@ -2,6 +2,7 @@ import { DateTime } from 'luxon'
 import { BaseModel, BelongsTo, HasMany, belongsTo, column, hasMany } from '@ioc:Adonis/Lucid/Orm'
 import Classroom from './Classroom'
 import MeetingLink from './MeetingLink'
+import MeetingFile from './MeetingFile'
 
 export default class Meeting extends BaseModel {
   @column({ isPrimary: true })
@@ -24,6 +25,9 @@ export default class Meeting extends BaseModel {
 
   @hasMany(() => MeetingLink)
   public links: HasMany<typeof MeetingLink>
+
+  @hasMany(() => MeetingFile)
+  public files: HasMany<typeof MeetingFile>
 
   @column.dateTime({ autoCreate: true })
   public createdAt: DateTime
