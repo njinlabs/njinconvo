@@ -86,7 +86,7 @@ export default class MeetingsController {
         ),
         files: schema.array.optional().members(
           schema.file({
-            size: '5mb',
+            size: '10mb',
           })
         ),
       }),
@@ -166,6 +166,7 @@ export default class MeetingsController {
         .useTransaction(trx)
         .where('meetings.id', params.id)
         .preload('links')
+        .preload('files')
         .firstOrFail()
 
       const {
@@ -173,6 +174,8 @@ export default class MeetingsController {
         description,
         is_draft: isDraft,
         links,
+        files,
+        old_files: oldFiles,
       } = await request.validate({
         schema: schema.create({
           title: schema.string(),
@@ -185,6 +188,12 @@ export default class MeetingsController {
               url: schema.string({}, [rules.url()]),
             })
           ),
+          files: schema.array.optional().members(
+            schema.file({
+              size: '10mb',
+            })
+          ),
+          old_files: schema.array.optional().members(schema.number()),
         }),
       })
 
@@ -200,6 +209,9 @@ export default class MeetingsController {
       const addLinks = links?.filter((el) => !el.id)
       const setLinks = meeting.links.filter(
         (item) => links?.find((el) => `${el.id}` === `${item.id}`)
+      )
+      const destroyFiles = meeting.files.filter(
+        (item) => !oldFiles?.find((el) => `${el}` === `${item.id}`)
       )
 
       for (const link of destroyLinks) {
@@ -220,7 +232,21 @@ export default class MeetingsController {
         )
       }
 
+      for (const file of destroyFiles) {
+        await file.useTransaction(trx).delete()
+      }
+
+      if (files?.length) {
+        await MeetingFile.createMany(
+          files.map((file) => ({ file: Attachment.fromFile(file), meetingId: meeting.id })),
+          {
+            client: trx,
+          }
+        )
+      }
+
       await meeting.load('links')
+      await meeting.load('files')
 
       return { ...meeting.serialize() }
     })
