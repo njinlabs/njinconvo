@@ -17,7 +17,7 @@ export default class User extends BaseModel {
   @column()
   public fullname: string
 
-  @attachment()
+  @attachment({ preComputeUrl: true })
   public avatar: AttachmentContract
 
   @column()

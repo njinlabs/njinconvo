@@ -1,5 +1,13 @@
 import { DateTime } from 'luxon'
-import { BaseModel, BelongsTo, HasMany, belongsTo, column, hasMany } from '@ioc:Adonis/Lucid/Orm'
+import {
+  BaseModel,
+  BelongsTo,
+  HasMany,
+  beforeDelete,
+  belongsTo,
+  column,
+  hasMany,
+} from '@ioc:Adonis/Lucid/Orm'
 import Classroom from './Classroom'
 import MeetingLink from './MeetingLink'
 import MeetingFile from './MeetingFile'
@@ -34,4 +42,12 @@ export default class Meeting extends BaseModel {
 
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   public updatedAt: DateTime
+
+  @beforeDelete()
+  public static async deleteFile(meeting: Meeting) {
+    const files = await meeting.related('files').query()
+    for (const file of files) {
+      await file.delete()
+    }
+  }
 }

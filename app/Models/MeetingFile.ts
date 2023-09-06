@@ -10,7 +10,7 @@ export default class MeetingFile extends BaseModel {
   @column()
   public meetingId: number
 
-  @attachment()
+  @attachment({ preComputeUrl: true })
   public file: AttachmentContract
 
   @belongsTo(() => Meeting)
