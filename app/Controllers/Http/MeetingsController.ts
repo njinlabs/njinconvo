@@ -146,7 +146,7 @@ export default class MeetingsController {
       meetingQuery.where('meetings.is_draft', false)
     }
 
-    const meeting = await meetingQuery.preload('links').firstOrFail()
+    const meeting = await meetingQuery.preload('links').preload('files').firstOrFail()
 
     return {
       ...meeting.serialize(),
