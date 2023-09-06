@@ -113,8 +113,10 @@ export default class MeetingsController {
       meetingQuery.where('meetings.is_draft', false)
     }
 
+    const meeting = await meetingQuery.preload('links').firstOrFail()
+
     return {
-      ...(await meetingQuery.firstOrFail()).serialize(),
+      ...meeting.serialize(),
       classroom: {
         ...classroom.serialize(),
         classroom_role: classroom.$extras.pivot_role,
