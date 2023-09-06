@@ -1,10 +1,11 @@
 import { AuthContract } from '@ioc:Adonis/Addons/Auth'
 import type { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
-import { schema } from '@ioc:Adonis/Core/Validator'
+import { schema, rules } from '@ioc:Adonis/Core/Validator'
 import Database from '@ioc:Adonis/Lucid/Database'
 import { ManyToManyQueryBuilderContract, ModelQueryBuilderContract } from '@ioc:Adonis/Lucid/Orm'
 import Classroom from 'App/Models/Classroom'
 import Meeting from 'App/Models/Meeting'
+import MeetingLink from 'App/Models/MeetingLink'
 
 export default class MeetingsController {
   private async getClassroom(
@@ -68,11 +69,18 @@ export default class MeetingsController {
       title,
       description,
       is_draft: isDraft,
+      links,
     } = await request.validate({
       schema: schema.create({
         title: schema.string(),
         description: schema.string(),
         is_draft: schema.boolean(),
+        links: schema.array.optional().members(
+          schema.object().members({
+            title: schema.string(),
+            url: schema.string({}, [rules.url()]),
+          })
+        ),
       }),
     })
 
@@ -83,9 +91,16 @@ export default class MeetingsController {
         isDraft,
       })
 
+      let meetingLinks: MeetingLink[] = []
+      if (links?.length) {
+        meetingLinks = await MeetingLink.createMany(
+          links.map((link) => ({ ...link, meetingId: meeting.id }))
+        )
+      }
+
       await meeting.related('classroom').associate(classroom)
 
-      return meeting.serialize()
+      return { ...meeting.serialize(), links: meetingLinks.map((link) => link.serialize()) }
     })
   }
 
