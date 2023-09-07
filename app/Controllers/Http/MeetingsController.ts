@@ -143,7 +143,7 @@ export default class MeetingsController {
     const meetingQuery = classroom.related('meetings').query().where('meetings.id', params.id)
 
     if (classroom.$extras.pivot_role === 'student') {
-      meetingQuery.where('meetings.is_draft', false)
+      meetingQuery.where('meetings.is_draft', false).preload('attendance')
     }
 
     const meeting = await meetingQuery.preload('links').preload('files').firstOrFail()

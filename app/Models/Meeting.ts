@@ -41,7 +41,7 @@ export default class Meeting extends BaseModel {
   public files: HasMany<typeof MeetingFile>
 
   @hasOne(() => MeetingAttendance)
-  public attendances: HasOne<typeof MeetingAttendance>
+  public attendance: HasOne<typeof MeetingAttendance>
 
   @column.dateTime({ autoCreate: true })
   public createdAt: DateTime

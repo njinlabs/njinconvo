@@ -57,7 +57,7 @@ export default class AttendancesController {
     })
 
     return await Database.transaction(async (trx) => {
-      const attendance = await MeetingAttendance.firstOrCreate(
+      const attendance = await MeetingAttendance.firstOrNew(
         {
           meetingId: meeting.id,
         },
@@ -70,6 +70,14 @@ export default class AttendancesController {
           client: trx,
         }
       )
+
+      if (!attendance.$isNew) {
+        attendance.allowSelfAttendance = allowSelfAttendance
+        attendance.selfAttendanceDue = selfAttendanceDue
+        attendance.showItToParticipants = showItToParticipants
+      }
+
+      await attendance.save()
 
       await meeting.load('classroom')
       await meeting.classroom.load('users')
