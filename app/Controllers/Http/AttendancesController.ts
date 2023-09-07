@@ -33,7 +33,7 @@ export default class AttendancesController {
   }
 
   public async save({ auth, params, request }: HttpContextContract) {
-    const meeting = await this.getMeeting(auth, params.id)
+    const meeting = await this.getMeeting(auth, params.id, true)
 
     const {
       allow_self_attendance: allowSelfAttendance,
@@ -95,5 +95,15 @@ export default class AttendancesController {
 
       return attendance.serialize()
     })
+  }
+
+  public async show({ auth, params }: HttpContextContract) {
+    const meeting = await this.getMeeting(auth, params.id)
+    const attendance = await MeetingAttendance.query()
+      .where('meeting_attendances.meeting_id', meeting.id)
+      .preload('details')
+      .firstOrFail()
+
+    return attendance.serialize()
   }
 }
