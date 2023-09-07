@@ -5,8 +5,11 @@ Route.group(() => {
   Route.post('/join', 'ClassroomsController.join').middleware(['private:student'])
 
   Route.group(() => {
-    Route.get('/:id/attendance', 'AttendancesController.show')
-    Route.put('/:id/attendance', 'AttendancesController.save').middleware('private:teacher')
+    Route.group(() => {
+      Route.get('/self', 'AttendancesController.showSelf')
+      Route.get('/', 'AttendancesController.show')
+      Route.put('/', 'AttendancesController.save').middleware('private:teacher')
+    }).prefix('/:id/attendance')
 
     Route.delete('/:id', 'MeetingsController.destroy').middleware('private:teacher')
     Route.put('/:id', 'MeetingsController.update').middleware('private:teacher')

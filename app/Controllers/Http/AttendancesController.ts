@@ -84,7 +84,10 @@ export default class AttendancesController {
             userId: detail.user_id,
             meetingAttendanceId: attendance.id,
             status: detail.status,
-          }))
+          })),
+        {
+          client: trx,
+        }
       )
 
       await attendance.load('details')
@@ -98,6 +101,17 @@ export default class AttendancesController {
     const attendance = await MeetingAttendance.query()
       .where('meeting_attendances.meeting_id', meeting.id)
       .preload('details')
+      .firstOrFail()
+
+    return attendance.serialize()
+  }
+
+  public async showSelf({ auth, params }: HttpContextContract) {
+    const meeting = await this.getMeeting(auth, params.id)
+    const attendance = await meeting
+      .related('attendance_details')
+      .query()
+      .where('attendance_details.user_id', auth.use('user').user!.id)
       .firstOrFail()
 
     return attendance.serialize()
