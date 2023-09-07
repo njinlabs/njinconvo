@@ -3,14 +3,17 @@ import {
   BaseModel,
   BelongsTo,
   HasMany,
+  HasOne,
   beforeDelete,
   belongsTo,
   column,
   hasMany,
+  hasOne,
 } from '@ioc:Adonis/Lucid/Orm'
 import Classroom from './Classroom'
 import MeetingLink from './MeetingLink'
 import MeetingFile from './MeetingFile'
+import MeetingAttendance from './MeetingAttendance'
 
 export default class Meeting extends BaseModel {
   @column({ isPrimary: true })
@@ -36,6 +39,9 @@ export default class Meeting extends BaseModel {
 
   @hasMany(() => MeetingFile)
   public files: HasMany<typeof MeetingFile>
+
+  @hasOne(() => MeetingAttendance)
+  public attendances: HasOne<typeof MeetingAttendance>
 
   @column.dateTime({ autoCreate: true })
   public createdAt: DateTime
