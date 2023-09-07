@@ -6,6 +6,7 @@ import Meeting from 'App/Models/Meeting'
 import MeetingAttendance from 'App/Models/MeetingAttendance'
 import { schema, rules } from '@ioc:Adonis/Core/Validator'
 import AttendanceDetail from 'App/Models/AttendanceDetail'
+import { DateTime } from 'luxon'
 
 export default class AttendancesController {
   private async getMeeting(
@@ -115,5 +116,35 @@ export default class AttendancesController {
       .firstOrFail()
 
     return attendance.serialize()
+  }
+
+  public async saveSelf({ auth, params, response, request }: HttpContextContract) {
+    const meeting = await this.getMeeting(auth, params.id)
+    await meeting.load('attendance')
+
+    if (
+      meeting.attendance.selfAttendanceDue < DateTime.now() ||
+      !meeting.attendance.allowSelfAttendance
+    ) {
+      return response.methodNotAllowed()
+    }
+
+    const { status } = await request.validate({
+      schema: schema.create({
+        status: schema.enum(['present', 'sick', 'permission', 'absent']),
+      }),
+    })
+
+    const detail = await AttendanceDetail.updateOrCreate(
+      {
+        userId: auth.use('user').user!.id,
+        meetingAttendanceId: meeting.attendance.id,
+      },
+      {
+        status,
+      }
+    )
+
+    return detail.serialize()
   }
 }

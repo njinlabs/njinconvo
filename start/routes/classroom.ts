@@ -7,6 +7,7 @@ Route.group(() => {
   Route.group(() => {
     Route.group(() => {
       Route.get('/self', 'AttendancesController.showSelf')
+      Route.put('/self', 'AttendancesController.saveSelf').middleware('private:student')
       Route.get('/', 'AttendancesController.show')
       Route.put('/', 'AttendancesController.save').middleware('private:teacher')
     }).prefix('/:id/attendance')
