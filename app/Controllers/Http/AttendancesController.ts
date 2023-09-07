@@ -57,7 +57,7 @@ export default class AttendancesController {
     })
 
     return await Database.transaction(async (trx) => {
-      const attendance = await MeetingAttendance.firstOrNew(
+      const attendance = await MeetingAttendance.updateOrCreate(
         {
           meetingId: meeting.id,
         },
@@ -71,33 +71,21 @@ export default class AttendancesController {
         }
       )
 
-      if (!attendance.$isNew) {
-        attendance.allowSelfAttendance = allowSelfAttendance
-        attendance.selfAttendanceDue = selfAttendanceDue
-        attendance.showItToParticipants = showItToParticipants
-      }
-
-      await attendance.save()
-
       await meeting.load('classroom')
       await meeting.classroom.load('users')
 
-      for (const detail of details.filter((detail) =>
-        meeting.classroom.users.map((item) => item.id).includes(detail.user_id)
-      )) {
-        await AttendanceDetail.firstOrCreate(
-          {
+      await AttendanceDetail.updateOrCreateMany(
+        ['userId', 'meetingAttendanceId'],
+        details
+          .filter((detail) =>
+            meeting.classroom.users.map((item) => item.id).includes(detail.user_id)
+          )
+          .map((detail) => ({
             userId: detail.user_id,
             meetingAttendanceId: attendance.id,
-          },
-          {
             status: detail.status,
-          },
-          {
-            client: trx,
-          }
-        )
-      }
+          }))
+      )
 
       await attendance.load('details')
 
