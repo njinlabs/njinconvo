@@ -12,7 +12,7 @@ export default class AttendancesController {
   private async getMeeting(
     auth: AuthContract,
     id: string | number,
-    teacherOnly = false
+    leadOnly = false
   ): Promise<Meeting> {
     let meetingQuery: ModelQueryBuilderContract<typeof Meeting, Meeting> = Meeting.query().where(
       'meetings.id',
@@ -20,11 +20,11 @@ export default class AttendancesController {
     )
 
     if (auth.use('user').user!.role !== 'administrator') {
-      meetingQuery.whereHas('classroom', (query) =>
+      meetingQuery.whereHas('group', (query) =>
         query.whereHas('users', (query) => {
           query.where('users.id', auth.use('user').user!.id)
-          if (teacherOnly) {
-            query.wherePivot('classroom_user.role', 'teacher')
+          if (leadOnly) {
+            query.wherePivot('group_user.role', 'lead')
           }
         })
       )
@@ -72,15 +72,13 @@ export default class AttendancesController {
         }
       )
 
-      await meeting.load('classroom')
-      await meeting.classroom.load('users')
+      await meeting.load('group')
+      await meeting.group.load('users')
 
       await AttendanceDetail.updateOrCreateMany(
         ['userId', 'meetingAttendanceId'],
         details
-          .filter((detail) =>
-            meeting.classroom.users.map((item) => item.id).includes(detail.user_id)
-          )
+          .filter((detail) => meeting.group.users.map((item) => item.id).includes(detail.user_id))
           .map((detail) => ({
             userId: detail.user_id,
             meetingAttendanceId: attendance.id,

@@ -28,7 +28,7 @@ export default class UsersController {
         password: schema.string.optional(),
         fullname: schema.string(),
         gender: schema.enum(['male', 'female']),
-        role: schema.enum(['administrator', 'teacher', 'student']),
+        role: schema.enum(['administrator', 'lead', 'participant']),
         birthday: schema.date(),
         avatar: schema.file.optional({
           extnames: ['jpg', 'jpeg', 'png'],
@@ -61,7 +61,7 @@ export default class UsersController {
         password: schema.string.optional(),
         fullname: schema.string(),
         gender: schema.enum(['male', 'female']),
-        role: schema.enum(['administrator', 'teacher', 'student']),
+        role: schema.enum(['administrator', 'lead', 'participant']),
         birthday: schema.date(),
         avatar: schema.file.optional({
           extnames: ['jpg', 'jpeg', 'png'],

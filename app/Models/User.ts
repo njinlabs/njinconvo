@@ -11,7 +11,7 @@ import {
 } from '@ioc:Adonis/Lucid/Orm'
 import { DateTime } from 'luxon'
 import AttendanceDetail from './AttendanceDetail'
-import Classroom from './Classroom'
+import Group from './Group'
 
 export default class User extends BaseModel {
   @column({ isPrimary: true })
@@ -38,10 +38,10 @@ export default class User extends BaseModel {
   @column()
   public role: string
 
-  @manyToMany(() => Classroom, {
+  @manyToMany(() => Group, {
     pivotColumns: ['role'],
   })
-  public classrooms: ManyToMany<typeof Classroom>
+  public groups: ManyToMany<typeof Group>
 
   @hasMany(() => AttendanceDetail)
   public attendances: HasMany<typeof AttendanceDetail>
@@ -61,7 +61,7 @@ export default class User extends BaseModel {
 
   public serializeExtras() {
     return {
-      classroom_role: this.$extras.pivot_role || undefined,
+      group_role: this.$extras.pivot_role || undefined,
     }
   }
 }

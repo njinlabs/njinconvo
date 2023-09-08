@@ -12,7 +12,7 @@ import {
   hasManyThrough,
   hasOne,
 } from '@ioc:Adonis/Lucid/Orm'
-import Classroom from './Classroom'
+import Group from './Group'
 import MeetingLink from './MeetingLink'
 import MeetingFile from './MeetingFile'
 import MeetingAttendance from './MeetingAttendance'
@@ -29,13 +29,13 @@ export default class Meeting extends BaseModel {
   public description: string
 
   @column()
-  public classroomId: number
+  public groupId: number
 
   @column()
   public isDraft: boolean
 
-  @belongsTo(() => Classroom)
-  public classroom: BelongsTo<typeof Classroom>
+  @belongsTo(() => Group)
+  public group: BelongsTo<typeof Group>
 
   @hasMany(() => MeetingLink)
   public links: HasMany<typeof MeetingLink>

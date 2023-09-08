@@ -12,7 +12,7 @@ import {
 import User from './User'
 import Meeting from './Meeting'
 
-export default class Classroom extends BaseModel {
+export default class Group extends BaseModel {
   @column({ isPrimary: true })
   public id: number
 
@@ -47,20 +47,20 @@ export default class Classroom extends BaseModel {
   }
 
   @beforeCreate()
-  public static async generateCode(classroom: Classroom) {
+  public static async generateCode(group: Group) {
     let code = this.randomize()
-    while (await Classroom.findBy('code', code)) {
+    while (await Group.findBy('code', code)) {
       code = this.randomize()
     }
 
-    classroom.code = code
+    group.code = code
   }
 
   @beforeDelete()
-  public static async removeMeeting(classroom: Classroom) {
-    await classroom.load('meetings')
+  public static async removeMeeting(group: Group) {
+    await group.load('meetings')
 
-    for (const meeting of classroom.meetings) {
+    for (const meeting of group.meetings) {
       await meeting.delete()
     }
   }

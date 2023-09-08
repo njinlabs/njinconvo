@@ -10,11 +10,11 @@ export default class extends BaseSchema {
       table.text('description').nullable()
       table.boolean('is_draft')
       table
-        .integer('classroom_id')
+        .integer('group_id')
         .unsigned()
         .nullable()
         .references('id')
-        .inTable('classrooms')
+        .inTable('groups')
         .onDelete('set null')
 
       /**

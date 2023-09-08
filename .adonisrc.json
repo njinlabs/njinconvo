@@ -16,7 +16,7 @@
   "preloads": [
     "./start/routes/auth.ts",
     "./start/routes/user.ts",
-    "./start/routes/classroom.ts",
+    "./start/routes/group.ts",
     "./start/kernel"
   ],
   "providers": [

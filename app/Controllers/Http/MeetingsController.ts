@@ -4,51 +4,44 @@ import type { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import { rules, schema } from '@ioc:Adonis/Core/Validator'
 import Database from '@ioc:Adonis/Lucid/Database'
 import { ManyToManyQueryBuilderContract, ModelQueryBuilderContract } from '@ioc:Adonis/Lucid/Orm'
-import Classroom from 'App/Models/Classroom'
+import Group from 'App/Models/Group'
 import Meeting from 'App/Models/Meeting'
 import MeetingFile from 'App/Models/MeetingFile'
 import MeetingLink from 'App/Models/MeetingLink'
 
 export default class MeetingsController {
-  private async getClassroom(
+  private async getGroup(
     auth: AuthContract,
     id: string | number,
-    teacherOnly = false
-  ): Promise<Classroom> {
-    let classroomQuery:
-      | ManyToManyQueryBuilderContract<typeof Classroom, Classroom>
-      | ModelQueryBuilderContract<typeof Classroom, Classroom> = Classroom.query().where(
-      'classrooms.id',
-      id
-    )
+    leadOnly = false
+  ): Promise<Group> {
+    let groupQuery:
+      | ManyToManyQueryBuilderContract<typeof Group, Group>
+      | ModelQueryBuilderContract<typeof Group, Group> = Group.query().where('groups.id', id)
 
     if (auth.use('user').user!.role !== 'administrator') {
-      classroomQuery = auth
-        .use('user')
-        .user!.related('classrooms')
-        .query()
-        .where('classrooms.id', id)
+      groupQuery = auth.use('user').user!.related('groups').query().where('groups.id', id)
 
-      if (teacherOnly) {
-        ;(classroomQuery as ManyToManyQueryBuilderContract<typeof Classroom, Classroom>).wherePivot(
-          'classroom_user.role',
-          'teacher'
+      if (leadOnly) {
+        ;(groupQuery as ManyToManyQueryBuilderContract<typeof Group, Group>).wherePivot(
+          'group_user.role',
+          'lead'
         )
       }
     }
 
-    return (await classroomQuery.firstOrFail()) as Classroom
+    return (await groupQuery.firstOrFail()) as Group
   }
 
   public async index({ auth, params, request }: HttpContextContract) {
-    const classroom = await this.getClassroom(auth, params.classroomId)
+    const group = await this.getGroup(auth, params.groupId)
 
     const page = Number(request.input('page', '1'))
     const limit = 20
 
-    const meetingsQuery = classroom.related('meetings').query()
+    const meetingsQuery = group.related('meetings').query()
 
-    if (classroom.$extras.pivot_role === 'student') {
+    if (group.$extras.pivot_role === 'participant') {
       meetingsQuery.where('meetings.is_draft', false)
     }
 
@@ -65,7 +58,7 @@ export default class MeetingsController {
   }
 
   public async store({ auth, params, request }: HttpContextContract) {
-    const classroom = await this.getClassroom(auth, params.classroomId, true)
+    const group = await this.getGroup(auth, params.groupId, true)
 
     const {
       title,
@@ -127,7 +120,7 @@ export default class MeetingsController {
         )
       }
 
-      await meeting.related('classroom').associate(classroom)
+      await meeting.related('group').associate(group)
 
       return {
         ...meeting.serialize(),
@@ -138,11 +131,11 @@ export default class MeetingsController {
   }
 
   public async show({ auth, params }: HttpContextContract) {
-    const classroom = await this.getClassroom(auth, params.classroomId)
+    const group = await this.getGroup(auth, params.groupId)
 
-    const meetingQuery = classroom.related('meetings').query().where('meetings.id', params.id)
+    const meetingQuery = group.related('meetings').query().where('meetings.id', params.id)
 
-    if (classroom.$extras.pivot_role === 'student') {
+    if (group.$extras.pivot_role === 'participant') {
       meetingQuery.where('meetings.is_draft', false).preload('attendance')
     }
 
@@ -150,17 +143,17 @@ export default class MeetingsController {
 
     return {
       ...meeting.serialize(),
-      classroom: {
-        ...classroom.serialize(),
-        classroom_role: classroom.$extras.pivot_role,
+      group: {
+        ...group.serialize(),
+        group_role: group.$extras.pivot_role,
       },
     }
   }
 
   public async update({ auth, params, request }: HttpContextContract) {
     return await Database.transaction(async (trx) => {
-      const classroom = await this.getClassroom(auth, params.classroomId, true)
-      const meeting = await classroom
+      const group = await this.getGroup(auth, params.groupId, true)
+      const meeting = await group
         .related('meetings')
         .query()
         .useTransaction(trx)
@@ -253,8 +246,8 @@ export default class MeetingsController {
   }
 
   public async destroy({ auth, params }: HttpContextContract) {
-    const classroom = await this.getClassroom(auth, params.classroomId)
-    const meeting = await classroom
+    const group = await this.getGroup(auth, params.groupId)
+    const meeting = await group
       .related('meetings')
       .query()
       .where('meetings.id', params.id)
