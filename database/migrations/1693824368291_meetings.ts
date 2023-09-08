@@ -9,6 +9,8 @@ export default class extends BaseSchema {
       table.string('title')
       table.text('description').nullable()
       table.boolean('is_draft')
+      table.dateTime('started_at', { useTz: true })
+      table.dateTime('finished_at', { useTz: true })
       table
         .integer('group_id')
         .unsigned()

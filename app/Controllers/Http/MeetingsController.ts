@@ -8,6 +8,7 @@ import Group from 'App/Models/Group'
 import Meeting from 'App/Models/Meeting'
 import MeetingFile from 'App/Models/MeetingFile'
 import MeetingLink from 'App/Models/MeetingLink'
+import { DateTime } from 'luxon'
 
 export default class MeetingsController {
   private async getGroup(
@@ -57,7 +58,7 @@ export default class MeetingsController {
     }
   }
 
-  public async store({ auth, params, request }: HttpContextContract) {
+  public async store({ auth, params, request, response }: HttpContextContract) {
     const group = await this.getGroup(auth, params.groupId, true)
 
     const {
@@ -66,11 +67,15 @@ export default class MeetingsController {
       is_draft: isDraft,
       links,
       files,
+      started_at,
+      finished_at: finishedAt,
     } = await request.validate({
       schema: schema.create({
         title: schema.string(),
         description: schema.string(),
         is_draft: schema.boolean(),
+        started_at: schema.date.optional({ format: 'yyyy-MM-dd HH:mm:ss' }),
+        finished_at: schema.date({ format: 'yyyy-MM-dd HH:mm:ss' }),
         links: schema.array.optional().members(
           schema.object().members({
             title: schema.string(),
@@ -85,12 +90,21 @@ export default class MeetingsController {
       }),
     })
 
+    const startedAt = started_at || DateTime.now()
+    if (finishedAt < startedAt || startedAt < DateTime.now()) {
+      return response.badRequest({
+        message: 'Started or finished due is invalid',
+      })
+    }
+
     return await Database.transaction(async (trx) => {
       const meeting = await Meeting.create(
         {
           title,
           description,
           isDraft,
+          startedAt,
+          finishedAt,
         },
         {
           client: trx,

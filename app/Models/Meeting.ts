@@ -34,6 +34,12 @@ export default class Meeting extends BaseModel {
   @column()
   public isDraft: boolean
 
+  @column.dateTime()
+  public startedAt: DateTime
+
+  @column.dateTime()
+  public finishedAt: DateTime
+
   @belongsTo(() => Group)
   public group: BelongsTo<typeof Group>
 
