@@ -91,9 +91,10 @@ export default class MeetingsController {
     })
 
     const startedAt = started_at || DateTime.now()
-    if (finishedAt < startedAt || startedAt < DateTime.now()) {
+
+    if (startedAt > finishedAt) {
       return response.badRequest({
-        message: 'Started or finished due is invalid',
+        message: 'Finished at is invalid',
       })
     }
 
@@ -164,7 +165,7 @@ export default class MeetingsController {
     }
   }
 
-  public async update({ auth, params, request }: HttpContextContract) {
+  public async update({ auth, params, request, response }: HttpContextContract) {
     return await Database.transaction(async (trx) => {
       const group = await this.getGroup(auth, params.groupId, true)
       const meeting = await group
@@ -182,12 +183,16 @@ export default class MeetingsController {
         is_draft: isDraft,
         links,
         files,
+        started_at,
+        finished_at: finishedAt,
         old_files: oldFiles,
       } = await request.validate({
         schema: schema.create({
           title: schema.string(),
           description: schema.string(),
           is_draft: schema.boolean(),
+          started_at: schema.date.optional({ format: 'yyyy-MM-dd HH:mm:ss' }),
+          finished_at: schema.date({ format: 'yyyy-MM-dd HH:mm:ss' }),
           links: schema.array.optional().members(
             schema.object().members({
               id: schema.number.nullableAndOptional(),
@@ -204,6 +209,16 @@ export default class MeetingsController {
         }),
       })
 
+      const startedAt = started_at || DateTime.now()
+
+      if (startedAt > finishedAt) {
+        return response.badRequest({
+          message: 'Finished at is invalid',
+        })
+      }
+
+      meeting.startedAt = startedAt
+      meeting.finishedAt = finishedAt
       meeting.title = title
       meeting.description = description
       meeting.isDraft = isDraft
