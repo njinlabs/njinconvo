@@ -134,4 +134,17 @@ export default class GroupsController {
 
     return participants.map((user) => user.serialize())
   }
+
+  public async leave({ auth, params }: HttpContextContract) {
+    const group = await auth
+      .use('user')
+      .user!.related('groups')
+      .query()
+      .where('groups.id', params.id)
+      .wherePivot('group_user.role', 'participant')
+      .firstOrFail()
+    await auth.use('user').user!.related('groups').detach([group.id])
+
+    return group.serialize()
+  }
 }

@@ -19,6 +19,7 @@ Route.group(() => {
     Route.get('/', 'MeetingsController.index')
   }).prefix('/:groupId/meeting')
 
+  Route.delete('/:id/leave', 'GroupsController.leave').middleware('private:participant')
   Route.get('/:id/participants', 'GroupsController.participants')
   Route.get('/:id', 'GroupsController.show')
   Route.post('/', 'GroupsController.store').middleware(['private:lead'])
