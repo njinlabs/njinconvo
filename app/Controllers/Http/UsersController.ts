@@ -102,4 +102,31 @@ export default class UsersController {
 
     return user.serialize()
   }
+
+  public async updateProfile({ request, auth }: HttpContextContract) {
+    const { fullname, gender, birthday, avatar } = await request.validate({
+      schema: schema.create({
+        fullname: schema.string(),
+        gender: schema.enum(['male', 'female']),
+        birthday: schema.date(),
+        avatar: schema.file.optional({
+          extnames: ['jpg', 'jpeg', 'png'],
+          size: '2mb',
+        }),
+      }),
+    })
+
+    const user = await auth.use('user').user!
+    user.fullname = fullname
+    user.gender = gender
+    user.birthday = birthday
+
+    if (avatar) {
+      user.avatar = Attachment.fromFile(avatar)
+    }
+
+    await user.save()
+
+    return user.serialize()
+  }
 }
