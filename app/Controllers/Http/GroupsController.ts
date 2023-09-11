@@ -31,6 +31,28 @@ export default class GroupsController {
     })
   }
 
+  public async update({ request, auth, params }: HttpContextContract) {
+    const group = await auth
+      .use('user')
+      .user!.related('groups')
+      .query()
+      .where('groups.id', params.id)
+      .wherePivot('group_user.role', 'lead')
+      .firstOrFail()
+
+    const { name } = await request.validate({
+      schema: schema.create({
+        name: schema.string(),
+      }),
+    })
+
+    group.name = name
+
+    await group.save()
+
+    return group.serialize()
+  }
+
   public async index({ request, auth }: HttpContextContract) {
     const page = Number(request.input('page', '1'))
     const limit = 50
