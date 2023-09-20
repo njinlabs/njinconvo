@@ -5,13 +5,34 @@ import User from 'App/Models/User'
 
 export default class UsersController {
   public async index({ request }: HttpContextContract) {
-    const page = Number(request.input('page', '1'))
+    const {
+      page = 1,
+      search,
+      order,
+      direction = 'asc',
+    } = await request.validate({
+      schema: schema.create({
+        page: schema.number.optional([rules.nullable()]),
+        search: schema.string.optional(),
+        order: schema.enum.optional(['fullname', 'email', 'gender', 'role', 'birthday']),
+        direction: schema.enum.optional(['asc', 'desc']),
+      }),
+    })
+
     const limit = 50
 
     const usersQuery = User.query()
+
+    if (search) {
+      usersQuery.where((query) => {
+        query.whereILike('fullname', `%${search}%`).orWhereILike('email', `%${search}%`)
+      })
+    }
+
     const usersCount = await usersQuery.clone().count('* as count')
     const users = await usersQuery
       .clone()
+      .orderBy(order || 'users.id', direction as 'asc' | 'desc' | undefined)
       .offset((page - 1) * limit)
       .limit(limit)
 
