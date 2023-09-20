@@ -14,10 +14,10 @@
     "Contracts": "contracts"
   },
   "preloads": [
-    "./start/routes/auth.ts",
-    "./start/routes/user.ts",
-    "./start/routes/group.ts",
-    "./start/routes/stats.ts",
+    "./start/routes/auth",
+    "./start/routes/user",
+    "./start/routes/group",
+    "./start/routes/stats",
     "./start/kernel"
   ],
   "providers": [
