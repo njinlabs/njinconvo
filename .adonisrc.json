@@ -17,6 +17,7 @@
     "./start/routes/auth.ts",
     "./start/routes/user.ts",
     "./start/routes/group.ts",
+    "./start/routes/stats.ts",
     "./start/kernel"
   ],
   "providers": [

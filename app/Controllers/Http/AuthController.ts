@@ -2,6 +2,9 @@ import type { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import { schema, rules } from '@ioc:Adonis/Core/Validator'
 import User from 'App/Models/User'
 import Hash from '@ioc:Adonis/Core/Hash'
+import Access from 'App/Models/Access'
+import { DateTime } from 'luxon'
+import Database from '@ioc:Adonis/Lucid/Database'
 
 export default class AuthController {
   public async signIn({ auth, request, response }: HttpContextContract) {
@@ -34,6 +37,22 @@ export default class AuthController {
   }
 
   public async checkToken({ auth }: HttpContextContract) {
-    return auth.use('user').user!.serialize()
+    return Database.transaction(async (trx) => {
+      let access =
+        (await Access.query()
+          .useTransaction(trx)
+          .where('user_id', auth.use('user').user!.id)
+          .where('created_at', '>=', DateTime.now().toSQLDate()!)
+          .forUpdate()
+          .noWait()
+          .first()) || new Access()
+
+      access.userId = auth.use('user').user!.id
+      access.count = Number(access.count || 0) + 1
+
+      await access.useTransaction(trx).save()
+
+      return auth.use('user').user!.serialize()
+    })
   }
 }
