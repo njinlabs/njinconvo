@@ -62,9 +62,29 @@ export default class GroupsController {
 
     if (role !== 'administrator') {
       groupsQuery.whereHas('users', (query) => query.where('users.id', auth.use('user').user!.id))
+    } else {
+      const {
+        search,
+        order,
+        direction = 'asc',
+      } = await request.validate({
+        schema: schema.create({
+          search: schema.string.optional(),
+          order: schema.enum.optional(['name', 'code', 'users_count', 'birthday']),
+          direction: schema.enum.optional(['asc', 'desc']),
+        }),
+      })
+
+      if (search) {
+        groupsQuery.where((query) => {
+          query.whereILike('name', `%${search}%`).orWhereILike('code', `%${search}%`)
+        })
+      }
+
+      groupsQuery.orderBy(order || 'groups.id', direction as 'asc' | 'desc' | undefined)
     }
 
-    const groupsCount = await groupsQuery.clone().count('* as count')
+    const groupsCount = await groupsQuery.clone().clearOrder().count('* as count')
     const groups = await groupsQuery
       .clone()
       .preload('users', (query) => query.wherePivot('role', 'lead'))

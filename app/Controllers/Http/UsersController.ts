@@ -12,7 +12,7 @@ export default class UsersController {
       direction = 'asc',
     } = await request.validate({
       schema: schema.create({
-        page: schema.number.optional([rules.nullable()]),
+        page: schema.number.optional(),
         search: schema.string.optional(),
         order: schema.enum.optional(['fullname', 'email', 'gender', 'role', 'birthday']),
         direction: schema.enum.optional(['asc', 'desc']),
