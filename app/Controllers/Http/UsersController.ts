@@ -2,6 +2,8 @@ import { Attachment } from '@ioc:Adonis/Addons/AttachmentLite'
 import type { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import { schema, rules } from '@ioc:Adonis/Core/Validator'
 import User from 'App/Models/User'
+import Hash from '@ioc:Adonis/Core/Hash'
+import Database from '@ioc:Adonis/Lucid/Database'
 
 export default class UsersController {
   public async index({ request }: HttpContextContract) {
@@ -139,5 +141,25 @@ export default class UsersController {
     await user.save()
 
     return user.serialize()
+  }
+
+  public async changePassword({ auth, request, response }: HttpContextContract) {
+    const { oldPassword, newPassword } = await request.validate({
+      schema: schema.create({
+        oldPassword: schema.string(),
+        newPassword: schema.string(),
+      }),
+    })
+
+    if (!(await Hash.verify(auth.use('user').user!.password, oldPassword))) {
+      return response.unauthorized()
+    }
+
+    auth.use('user').user!.password = newPassword
+    await auth.use('user').user!.save()
+
+    await Database.query().from('api_tokens').where('user_id', auth.use('user').user!.id).delete()
+
+    return auth.use('user').user!.serialize()
   }
 }
