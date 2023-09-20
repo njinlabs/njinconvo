@@ -21,7 +21,7 @@ export default class UsersController {
 
     const limit = 50
 
-    const usersQuery = User.query()
+    const usersQuery = User.query().whereNot('role', 'administrator')
 
     if (search) {
       usersQuery.where((query) => {
@@ -43,18 +43,14 @@ export default class UsersController {
   }
 
   public async store({ request }: HttpContextContract) {
-    const { email, password, fullname, gender, role, birthday, avatar } = await request.validate({
+    const { email, password, fullname, gender, role, birthday } = await request.validate({
       schema: schema.create({
         email: schema.string({}, [rules.email()]),
         password: schema.string.optional(),
         fullname: schema.string(),
         gender: schema.enum(['male', 'female']),
-        role: schema.enum(['administrator', 'lead', 'participant']),
+        role: schema.enum(['lead', 'participant']),
         birthday: schema.date(),
-        avatar: schema.file.optional({
-          extnames: ['jpg', 'jpeg', 'png'],
-          size: '2mb',
-        }),
       }),
     })
 
@@ -66,17 +62,13 @@ export default class UsersController {
     user.role = role
     user.birthday = birthday
 
-    if (avatar) {
-      user.avatar = Attachment.fromFile(avatar)
-    }
-
     await user.save()
 
     return user.serialize()
   }
 
   public async update({ request, params }: HttpContextContract) {
-    const { email, password, fullname, gender, role, birthday, avatar } = await request.validate({
+    const { email, password, fullname, gender, role, birthday } = await request.validate({
       schema: schema.create({
         email: schema.string({}, [rules.email()]),
         password: schema.string.optional(),
@@ -84,23 +76,18 @@ export default class UsersController {
         gender: schema.enum(['male', 'female']),
         role: schema.enum(['administrator', 'lead', 'participant']),
         birthday: schema.date(),
-        avatar: schema.file.optional({
-          extnames: ['jpg', 'jpeg', 'png'],
-          size: '2mb',
-        }),
       }),
     })
 
-    const user = await User.findOrFail(params.id)
+    const user = await User.query()
+      .where('id', params.id)
+      .whereNot('role', 'administrator')
+      .firstOrFail()
     user.email = email.toLowerCase()
     user.fullname = fullname
     user.gender = gender
     user.role = role
     user.birthday = birthday
-
-    if (avatar) {
-      user.avatar = Attachment.fromFile(avatar)
-    }
 
     if (password) {
       user.password = password
@@ -118,7 +105,10 @@ export default class UsersController {
   }
 
   public async destroy({ params }: HttpContextContract) {
-    const user = await User.findOrFail(params.id)
+    const user = await User.query()
+      .where('id', params.id)
+      .whereNot('role', 'administrator')
+      .firstOrFail()
     await user.delete()
 
     return user.serialize()
