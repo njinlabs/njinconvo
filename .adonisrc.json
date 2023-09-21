@@ -18,6 +18,7 @@
     "./start/routes/user",
     "./start/routes/group",
     "./start/routes/stats",
+    "./start/routes/spa",
     "./start/kernel"
   ],
   "providers": [
@@ -37,5 +38,14 @@
       }
     ]
   },
-  "testProviders": ["@japa/preset-adonis/TestsProvider"]
+  "testProviders": ["@japa/preset-adonis/TestsProvider"],
+  "directories": {
+    "public": "frontend"
+  },
+  "metaFiles": [
+    {
+      "pattern": "frontend/**",
+      "reloadServer": false
+    }
+  ]
 }
