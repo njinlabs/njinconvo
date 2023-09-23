@@ -14,7 +14,7 @@ export default class MeetingAttendance extends BaseModel {
   public allowSelfAttendance: boolean
 
   @column.dateTime()
-  public selfAttendanceDue: DateTime
+  public selfAttendanceDue: DateTime | null
 
   @column()
   public showItToParticipants: boolean
