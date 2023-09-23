@@ -37,14 +37,14 @@ export default class AttendancesController {
     const meeting = await this.getMeeting(auth, params.id, true)
 
     const {
-      allow_self_attendance: allowSelfAttendance,
+      allow_self_attendance: allowSelfAttendance = false,
       self_attendance_due: selfAttendanceDue,
       show_it_to_participants: showItToParticipants,
       details,
     } = await request.validate({
       schema: schema.create({
-        allow_self_attendance: schema.boolean(),
-        self_attendance_due: schema.date({ format: 'yyyy-MM-dd HH:mm:ss' }, [
+        allow_self_attendance: schema.boolean.optional(),
+        self_attendance_due: schema.date.optional({ format: 'yyyy-MM-dd HH:mm:ss' }, [
           rules.requiredIfExists('allow_self_attendance'),
         ]),
         show_it_to_participants: schema.boolean(),
@@ -64,7 +64,7 @@ export default class AttendancesController {
         },
         {
           allowSelfAttendance,
-          selfAttendanceDue,
+          selfAttendanceDue: allowSelfAttendance ? selfAttendanceDue : null,
           showItToParticipants,
         },
         {
@@ -121,7 +121,8 @@ export default class AttendancesController {
     await meeting.load('attendance')
 
     if (
-      meeting.attendance.selfAttendanceDue < DateTime.now() ||
+      (meeting.attendance.selfAttendanceDue &&
+        meeting.attendance.selfAttendanceDue < DateTime.now()) ||
       !meeting.attendance.allowSelfAttendance
     ) {
       return response.methodNotAllowed()
